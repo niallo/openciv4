@@ -3910,7 +3910,14 @@ float4 PSTerrain(PSIn i) : SV_Target
 				by += bh + 1;
 			}
 			if (!c.production.empty() && distance < 25)
-				overlay.richText(wide(c.production), x, by, size * 0.8f, false, { 0.85f, 0.88f, 0.95f }, 0.95f, Overlay::Align::Center);
+			{
+				const std::wstring label = wide(c.production);
+				const float fontSize = size * 0.8f;
+				const float halfWidth = overlay.richWidth(label, fontSize, false) / 2 + 4 * scale;
+				const float labelHeight = overlay.richHeight(label, 4096, fontSize, false);
+				overlay.rect(x - halfWidth, by, x + halfWidth, by + labelHeight, { 0.05f, 0.06f, 0.08f }, 0.85f, 3 * scale);
+				overlay.richText(label, x, by, fontSize, false, { 0.85f, 0.88f, 0.95f }, 1, Overlay::Align::Center);
+			}
 		}
 	}
 

@@ -1491,9 +1491,10 @@ namespace oc4::render
 			renderHeads();
 			if (!overlay->begin())
 				return;
-			view->drawOverlay(*overlay);
 			drawMarks();
 			drawLayers();
+			// Keep city names, progress and production above resource and yield icons.
+			view->drawOverlay(*overlay);
 			drawPath();
 			if (ui.active())
 			{

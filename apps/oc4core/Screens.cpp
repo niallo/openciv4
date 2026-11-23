@@ -995,7 +995,13 @@ if _walls:
 			const auto [mouseX, mouseY] = window.mousePosition();
 			screens.attr("setMouse")(std::max(mouseX, 0), std::max(mouseY, 0));
 			py::module_ entry = py::module_::import("CvScreensInterface");
-			entry.attr("forceScreenUpdate")(py::make_tuple(m_mainId));
+			// The original engine calls updateScreen every 250 ms. BUG's clock counts
+			// down by that amount each time, independently of the rendering frame rate.
+			if (now >= m_nextMainUpdate)
+			{
+				m_nextMainUpdate = now + std::chrono::milliseconds(250);
+				entry.attr("forceScreenUpdate")(py::make_tuple(m_mainId));
+			}
 			// The turn log, as the game core asks for it.
 			switch (ui.turnLogRequest.exchange(Interface::TurnLog::None))
 			{

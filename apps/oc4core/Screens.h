@@ -1,7 +1,7 @@
 #pragma once
 
 // The game's Python screens as the original engine runs them: the main interface comes up
-// when a game starts (CvScreensInterface.showMainInterface), is updated every frame and
+// when a game starts (CvScreensInterface.showMainInterface), is updated every 250 ms and
 // redrawn when the DLL marks parts of it dirty (forceScreenUpdate / forceScreenRedraw);
 // what the screens' widgets draw (python/oc4screens.py keeps them) goes to the window, and
 // the input comes back: a click runs the widget's action in the DLL
@@ -141,6 +141,7 @@ namespace oc4::host
 		std::vector<std::pair<int, std::wstring>> m_talkAnswers; // the player's answers in it, last frame
 		long long m_minimapVersion = 0;        // the screen minimap the window has
 		std::chrono::steady_clock::time_point m_lastUpdate; // when the screens were last updated
+		std::chrono::steady_clock::time_point m_nextMainUpdate{};
 		bool m_diploActive = false;
 	};
 }

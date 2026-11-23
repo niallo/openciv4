@@ -1803,6 +1803,44 @@ namespace oc4::render
 				x - halfIcon, centerY - halfIcon, x + halfIcon, centerY + halfIcon, w * 0.12f, h * 0.12f, w * 0.88f, h * 0.88f);
 		}
 
+		void drawTileYields(const PlotView& p, float x, float y, float size, const std::array<float, 3>& symbolWidths)
+		{
+			const float step = size * 0.55f, stagger = size * 0.18f, gap = size * 0.25f;
+			std::array<std::wstring, 3> counts;
+			std::array<float, 3> widths{};
+			float total = 0;
+			for (size_t k = 0; k < widths.size(); ++k)
+			{
+				const int n = p.yields[k];
+				if (n == 0 || symbolWidths[k] == 0)
+					continue;
+				if (n >= 5)
+				{
+					counts[k] = std::to_wstring(n) + yieldSymbols[k];
+					widths[k] = overlay->richWidth(counts[k], size, true);
+				}
+				else
+					widths[k] = symbolWidths[k] + step * float(n - 1);
+				total += widths[k] + gap;
+			}
+
+			static constexpr Color kYield[] = { { 0.55f, 0.95f, 0.35f }, { 0.75f, 0.8f, 0.95f }, { 1, 0.85f, 0.2f } };
+			float left = x - (total - gap) / 2;
+			for (size_t k = 0; k < widths.size(); ++k)
+			{
+				if (widths[k] == 0)
+					continue;
+				const float top = y - size * 0.55f;
+				if (!counts[k].empty())
+					overlay->richText(counts[k], left, top, size, true, kYield[k], 0.84f);
+				else
+					for (int i = int(p.yields[k]) - 1; i >= 0; --i)
+						overlay->richText(yieldSymbols[k], left + step * float(i), top + stagger * float(i),
+							size, true, kYield[k], 0.84f, Overlay::Align::Left, false);
+				left += widths[k] + gap;
+			}
+		}
+
 		// The map overlays for yields, resources and unit stacks.
 		void drawLayers()
 		{
@@ -1828,6 +1866,11 @@ namespace oc4::render
 				const float margin = layers.resources ? std::max(40.0f, 3 * resourceRadius) : 40.0f;
 				return sx > -margin && sy > -margin && sx < overlay->screenWidth() + margin && sy < overlay->screenHeight() + margin;
 			};
+			const float yieldSize = 12 * zoom;
+			std::array<float, 3> yieldWidths{};
+			if (layers.yields)
+				for (size_t k = 0; k < yieldWidths.size(); ++k)
+					yieldWidths[k] = overlay->richWidth(yieldSymbols[k], yieldSize, true);
 			for (int y = 0; y < map.height; ++y)
 				for (int x = 0; x < map.width; ++x)
 				{
@@ -1837,6 +1880,8 @@ namespace oc4::render
 					float sx = 0, sy = 0;
 					if (!toScreen((float(x) + 0.5f) * plot(), (float(y) + 0.5f) * plot(), 0, sx, sy))
 						continue;
+					if (layers.yields)
+						drawTileYields(p, sx, sy, yieldSize, yieldWidths);
 					if (layers.resources && p.bonus >= 0 && size_t(p.bonus) < map.bonusButtons.size())
 						if (const ButtonArt::Icon* ic = art.icon(map.bonusButtons[size_t(p.bonus)]))
 						{
@@ -1844,28 +1889,6 @@ namespace oc4::render
 							const Color rim = owner >= 0 && size_t(owner) < map.players.size() ? map.players[size_t(owner)].primary : Color{ 0.80f, 0.80f, 0.80f };
 							drawResourcePin(*ic, sx, sy, resourceRadius, rim);
 						}
-					if (layers.yields)
-					{
-						// (a row a yield, as many of its symbol as it gives: five and more as a number)
-						const float size = 11 * zoom;
-						float ry = sy - size * 0.5f * float(int(p.yields[0] > 0) + int(p.yields[1] > 0) + int(p.yields[2] > 0)) * 1.1f;
-						for (int k = 0; k < 3; ++k)
-						{
-							const int n = p.yields[k];
-							if (n <= 0 || yieldSymbols[size_t(k)].empty())
-								continue;
-							std::wstring row;
-							if (n >= 5)
-								row = std::to_wstring(n) + yieldSymbols[size_t(k)];
-							else
-								for (int i = 0; i < n; ++i)
-									row += yieldSymbols[size_t(k)];
-							// (in the yields' colours: the font's stand-ins have none of their own)
-							static const Color kYield[3] = { { 0.55f, 0.95f, 0.35f }, { 0.75f, 0.8f, 0.95f }, { 1, 0.85f, 0.2f } };
-							overlay->richText(row, sx, ry, size, true, kYield[k], 1, Overlay::Align::Center);
-							ry += size * 1.1f;
-						}
-					}
 				}
 			if (layers.units)
 				for (const UnitView& u : map.units)

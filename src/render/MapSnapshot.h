@@ -133,6 +133,7 @@ namespace oc4::render
 	struct PlotView
 	{
 		int16_t terrain = -1, feature = -1, owner = -1;
+		int16_t revealedOwner = -1; // the owner known to the active team
 		int16_t improvement = -1, bonus = -1, route = -1; // (the resource as the active team knows it)
 		uint8_t yields[3]{}; // food, production, commerce (YieldTypes) of a plot the active team has seen
 		uint8_t featureVariety = 0;

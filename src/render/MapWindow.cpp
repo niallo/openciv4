@@ -1787,8 +1787,23 @@ namespace oc4::render
 			}
 		}
 
-		// The game's layers over the plots near the camera: the yields (as many symbols as the
-		// plot gives, a row each), the resources' icons, the units' icons over their stacks.
+		void drawResourcePin(const ButtonArt::Icon& icon, float x, float y, float radius, Color rim)
+		{
+			const float centerY = y - radius * 1.55f;
+			const float xPoints[] = { x - radius * 0.40f, x + radius * 0.40f, x + radius * 0.09f, x - radius * 0.09f };
+			const float yPoints[] = { centerY + radius * 0.75f, centerY + radius * 0.75f, y, y };
+			overlay->quad(xPoints, yPoints, rim, 0.95f);
+			overlay->circle(x, centerY, radius, rim, 0.95f);
+			overlay->circle(x, centerY, radius * 0.90f, { 0.04f, 0.05f, 0.07f }, 0.97f);
+
+			// Use the resource artwork inside the button's frame. Its square fits inside the rim.
+			const float halfIcon = radius * 0.63f;
+			const float w = float(icon.width), h = float(icon.height);
+			overlay->imagePart(icon.key, icon.bgra, icon.width, icon.height, 1,
+				x - halfIcon, centerY - halfIcon, x + halfIcon, centerY + halfIcon, w * 0.12f, h * 0.12f, w * 0.88f, h * 0.88f);
+		}
+
+		// The map overlays for yields, resources and unit stacks.
 		void drawLayers()
 		{
 			if (!layers.yields && !layers.resources && !layers.units)
@@ -1797,6 +1812,9 @@ namespace oc4::render
 			if (map.width <= 0 || camera.distance > 32 * plot())
 				return;
 			const XMMATRIX vp = viewProjection();
+			const float zoom = std::clamp(12 * plot() / camera.distance, 0.6f, 1.4f);
+			// Approximately 40 pixels across at 768 pixels of viewport height.
+			const float resourceRadius = 20.0f * (overlay->screenHeight() / 768.0f);
 			const auto toScreen = [&](float wx, float wy, float lift, float& sx, float& sy) {
 				if (const Vec3 size = view->worldSize(); map.wrapX && size.x > 0)
 					while (std::abs(wx - camera.target.x) > size.x / 2)
@@ -1807,9 +1825,9 @@ namespace oc4::render
 					return false;
 				sx = (c.x / c.w * 0.5f + 0.5f) * overlay->screenWidth();
 				sy = (0.5f - c.y / c.w * 0.5f) * overlay->screenHeight();
-				return sx > -40 && sy > -40 && sx < overlay->screenWidth() + 40 && sy < overlay->screenHeight() + 40;
+				const float margin = layers.resources ? std::max(40.0f, 3 * resourceRadius) : 40.0f;
+				return sx > -margin && sy > -margin && sx < overlay->screenWidth() + margin && sy < overlay->screenHeight() + margin;
 			};
-			const float zoom = std::clamp(12 * plot() / camera.distance, 0.6f, 1.4f);
 			for (int y = 0; y < map.height; ++y)
 				for (int x = 0; x < map.width; ++x)
 				{
@@ -1822,9 +1840,9 @@ namespace oc4::render
 					if (layers.resources && p.bonus >= 0 && size_t(p.bonus) < map.bonusButtons.size())
 						if (const ButtonArt::Icon* ic = art.icon(map.bonusButtons[size_t(p.bonus)]))
 						{
-							const float r = 13 * zoom;
-							overlay->rect(sx - r - 2, sy - r - 2 - 18 * zoom, sx + r + 2, sy + r + 2 - 18 * zoom, { 0, 0, 0 }, 0.55f, 4);
-							overlay->image(ic->key, ic->bgra, ic->width, ic->height, 1, sx - r, sy - r - 18 * zoom, sx + r, sy + r - 18 * zoom);
+							const int owner = view->options.fog ? p.revealedOwner : p.owner;
+							const Color rim = owner >= 0 && size_t(owner) < map.players.size() ? map.players[size_t(owner)].primary : Color{ 0.80f, 0.80f, 0.80f };
+							drawResourcePin(*ic, sx, sy, resourceRadius, rim);
 						}
 					if (layers.yields)
 					{

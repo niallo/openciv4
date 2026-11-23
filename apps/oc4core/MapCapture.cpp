@@ -855,6 +855,7 @@ namespace oc4::host
 			v.feature = int16_t(plot->getFeatureType());
 			v.featureVariety = uint8_t(std::max(plot->getFeatureVariety(), 0));
 			v.owner = int16_t(plot->getOwner());
+			v.revealedOwner = active == NO_TEAM ? v.owner : int16_t(plot->getRevealedOwner(active, false));
 			v.improvement = int16_t(plot->getImprovementType());
 			// (a resource the active team cannot see yet, by its techs, is not there for it)
 			v.bonus = int16_t(plot->getBonusType(active));
